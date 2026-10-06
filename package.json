@@ -1,0 +1,17 @@
+{
+  "name": "travel-records-template",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "postinstall": "mkdir -p public/vendor/maplibre && cp node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs public/vendor/maplibre/",
+    "content": "python3 tools/build_content.py"
+  },
+  "dependencies": {
+    "astro": "^5.18.2",
+    "maplibre-gl": "^6.11.2",
+    "photoswipe": "^5.4.4"
+  }
+}

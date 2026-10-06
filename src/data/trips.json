@@ -1,0 +1,364 @@
+[
+  {
+    "slug": "sample-coast",
+    "title": "Coastal Walk",
+    "titleKo": "바닷가 산책 — 샘플",
+    "kicker": "A sample journey",
+    "region": "DEMO",
+    "intro": "실제 여행 기록이 아닌 템플릿 사용 예시입니다. 사진과 글을 내 여행으로 바꿔보세요.",
+    "start": "2025-05-01",
+    "end": "2025-05-01",
+    "days": [
+      {
+        "date": "2025-05-01",
+        "accent": "#72b4b0",
+        "titleKo": "나의 첫 번째 여행 이야기",
+        "titleEn": "A day to remember",
+        "lede": "이곳에 하루의 소개를 적어주세요.",
+        "journal": [
+          "이곳에 여행 글을 적어주세요.",
+          "샘플 장소의 좌표와 일러스트를 사용한 데모입니다."
+        ],
+        "stops": [
+          {
+            "name": "샘플 장소 1",
+            "en": "Sample stop 1",
+            "kind": "city",
+            "note": "방문한 장소와 기억에 남는 순간을 적어주세요.",
+            "coords": [
+              130.362,
+              33.594
+            ],
+            "time": "10:00",
+            "photos": [
+              {
+                "id": "sample-coast-d1-s0-0-668c4ddcfe43c2e7",
+                "src": "/demo/scene-3.svg",
+                "md": "/demo/scene-3.svg",
+                "w": 1600,
+                "h": 1000,
+                "coords": [
+                  130.362,
+                  33.594
+                ],
+                "time": "10:00"
+              }
+            ],
+            "id": "sample-coast-d1-s0",
+            "kindEn": "City",
+            "hour": 10,
+            "camera": {
+              "zoom": 15,
+              "pitch": 50,
+              "bearing": 0
+            }
+          },
+          {
+            "name": "샘플 장소 2",
+            "en": "Sample stop 2",
+            "kind": "city",
+            "note": "방문한 장소와 기억에 남는 순간을 적어주세요.",
+            "coords": [
+              130.349,
+              33.586
+            ],
+            "time": "14:00",
+            "photos": [
+              {
+                "id": "sample-coast-d1-s1-0-0e5dd30cb7e0a0e1",
+                "src": "/demo/scene-4.svg",
+                "md": "/demo/scene-4.svg",
+                "w": 1600,
+                "h": 1000,
+                "coords": [
+                  130.349,
+                  33.586
+                ],
+                "time": "14:00"
+              }
+            ],
+            "id": "sample-coast-d1-s1",
+            "kindEn": "City",
+            "hour": 14,
+            "camera": {
+              "zoom": 15,
+              "pitch": 50,
+              "bearing": 0
+            }
+          }
+        ],
+        "day": 1,
+        "weekday": "THU",
+        "route": [
+          [
+            130.362,
+            33.594
+          ],
+          [
+            130.349,
+            33.586
+          ]
+        ],
+        "km": 1,
+        "cover": {
+          "id": "sample-coast-d1-s0-0-668c4ddcfe43c2e7",
+          "src": "/demo/scene-3.svg",
+          "md": "/demo/scene-3.svg",
+          "w": 1600,
+          "h": 1000,
+          "coords": [
+            130.362,
+            33.594
+          ],
+          "time": "10:00"
+        },
+        "mosaic": [
+          {
+            "id": "sample-coast-d1-s0-0-668c4ddcfe43c2e7",
+            "src": "/demo/scene-3.svg",
+            "md": "/demo/scene-3.svg",
+            "w": 1600,
+            "h": 1000,
+            "coords": [
+              130.362,
+              33.594
+            ],
+            "time": "10:00"
+          },
+          {
+            "id": "sample-coast-d1-s1-0-0e5dd30cb7e0a0e1",
+            "src": "/demo/scene-4.svg",
+            "md": "/demo/scene-4.svg",
+            "w": 1600,
+            "h": 1000,
+            "coords": [
+              130.349,
+              33.586
+            ],
+            "time": "14:00"
+          }
+        ],
+        "photoCount": 2
+      }
+    ],
+    "bbox": [
+      [
+        130.34699999999998,
+        33.583999999999996
+      ],
+      [
+        130.364,
+        33.596000000000004
+      ]
+    ],
+    "center": [
+      33.59,
+      130.3555
+    ],
+    "cover": {
+      "id": "sample-coast-d1-s0-0-668c4ddcfe43c2e7",
+      "src": "/demo/scene-3.svg",
+      "md": "/demo/scene-3.svg",
+      "w": 1600,
+      "h": 1000,
+      "coords": [
+        130.362,
+        33.594
+      ],
+      "time": "10:00"
+    },
+    "stats": {
+      "days": 1,
+      "km": 1,
+      "places": 2,
+      "photos": 2
+    },
+    "glyph": [
+      {
+        "color": "#72b4b0",
+        "d": "M92.00,18.97L8.00,81.03"
+      }
+    ]
+  },
+  {
+    "slug": "sample-city",
+    "title": "City Walk",
+    "titleKo": "도시 산책 — 샘플",
+    "kicker": "A sample journey",
+    "region": "DEMO",
+    "intro": "실제 여행 기록이 아닌 템플릿 사용 예시입니다. 사진과 글을 내 여행으로 바꿔보세요.",
+    "start": "2025-04-01",
+    "end": "2025-04-01",
+    "days": [
+      {
+        "date": "2025-04-01",
+        "accent": "#72b4b0",
+        "titleKo": "나의 첫 번째 여행 이야기",
+        "titleEn": "A day to remember",
+        "lede": "이곳에 하루의 소개를 적어주세요.",
+        "journal": [
+          "이곳에 여행 글을 적어주세요.",
+          "샘플 장소의 좌표와 일러스트를 사용한 데모입니다."
+        ],
+        "stops": [
+          {
+            "name": "샘플 장소 1",
+            "en": "Sample stop 1",
+            "kind": "city",
+            "note": "방문한 장소와 기억에 남는 순간을 적어주세요.",
+            "coords": [
+              139.7671,
+              35.6812
+            ],
+            "time": "10:00",
+            "photos": [
+              {
+                "id": "sample-city-d1-s0-0-e0cb6459c28f3723",
+                "src": "/demo/scene-1.svg",
+                "md": "/demo/scene-1.svg",
+                "w": 1600,
+                "h": 1000,
+                "coords": [
+                  139.7671,
+                  35.6812
+                ],
+                "time": "10:00"
+              }
+            ],
+            "id": "sample-city-d1-s0",
+            "kindEn": "City",
+            "hour": 10,
+            "camera": {
+              "zoom": 15,
+              "pitch": 50,
+              "bearing": 0
+            }
+          },
+          {
+            "name": "샘플 장소 2",
+            "en": "Sample stop 2",
+            "kind": "city",
+            "note": "방문한 장소와 기억에 남는 순간을 적어주세요.",
+            "coords": [
+              139.773,
+              35.698
+            ],
+            "time": "14:00",
+            "photos": [
+              {
+                "id": "sample-city-d1-s1-0-c275920bc92d318e",
+                "src": "/demo/scene-2.svg",
+                "md": "/demo/scene-2.svg",
+                "w": 1600,
+                "h": 1000,
+                "coords": [
+                  139.773,
+                  35.698
+                ],
+                "time": "14:00"
+              }
+            ],
+            "id": "sample-city-d1-s1",
+            "kindEn": "City",
+            "hour": 14,
+            "camera": {
+              "zoom": 15,
+              "pitch": 50,
+              "bearing": 0
+            }
+          }
+        ],
+        "day": 1,
+        "weekday": "TUE",
+        "route": [
+          [
+            139.7671,
+            35.6812
+          ],
+          [
+            139.773,
+            35.698
+          ]
+        ],
+        "km": 2,
+        "cover": {
+          "id": "sample-city-d1-s0-0-e0cb6459c28f3723",
+          "src": "/demo/scene-1.svg",
+          "md": "/demo/scene-1.svg",
+          "w": 1600,
+          "h": 1000,
+          "coords": [
+            139.7671,
+            35.6812
+          ],
+          "time": "10:00"
+        },
+        "mosaic": [
+          {
+            "id": "sample-city-d1-s0-0-e0cb6459c28f3723",
+            "src": "/demo/scene-1.svg",
+            "md": "/demo/scene-1.svg",
+            "w": 1600,
+            "h": 1000,
+            "coords": [
+              139.7671,
+              35.6812
+            ],
+            "time": "10:00"
+          },
+          {
+            "id": "sample-city-d1-s1-0-c275920bc92d318e",
+            "src": "/demo/scene-2.svg",
+            "md": "/demo/scene-2.svg",
+            "w": 1600,
+            "h": 1000,
+            "coords": [
+              139.773,
+              35.698
+            ],
+            "time": "14:00"
+          }
+        ],
+        "photoCount": 2
+      }
+    ],
+    "bbox": [
+      [
+        139.7651,
+        35.679199999999994
+      ],
+      [
+        139.775,
+        35.7
+      ]
+    ],
+    "center": [
+      35.6896,
+      139.77005
+    ],
+    "cover": {
+      "id": "sample-city-d1-s0-0-e0cb6459c28f3723",
+      "src": "/demo/scene-1.svg",
+      "md": "/demo/scene-1.svg",
+      "w": 1600,
+      "h": 1000,
+      "coords": [
+        139.7671,
+        35.6812
+      ],
+      "time": "10:00"
+    },
+    "stats": {
+      "days": 1,
+      "km": 2,
+      "places": 2,
+      "photos": 2
+    },
+    "glyph": [
+      {
+        "color": "#72b4b0",
+        "d": "M38.02,92.00L61.98,8.00"
+      }
+    ]
+  }
+]

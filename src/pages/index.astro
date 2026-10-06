@@ -1,0 +1,334 @@
+---
+import Base from '../layouts/Base.astro';
+import trips from '../data/trips.json';
+import site from '../data/site.json';
+
+const fmt = (d: string) => d.replaceAll('-', '.');
+const totalDays = trips.reduce((n, t) => n + t.stats.days, 0);
+const totalPlaces = trips.reduce((n, t) => n + t.stats.places, 0);
+const totalPhotos = trips.reduce((n, t) => n + t.stats.photos, 0);
+const totalKm = trips.reduce((n, t) => n + t.stats.km, 0);
+const years = [...new Set(trips.map((t) => t.start.slice(0, 4)))];
+// 스크롤을 내릴수록 최근 여행: 가장 오래된 여행이 맨 위, 가장 최근이 맨 아래
+const oldestFirst = [...trips].reverse();
+const split = (s: string, offset = 0) => [...s].map((ch, i) => ({ ch, i: i + offset }));
+
+// 옆에 고정된 지도에 쓸 데이터: 여행마다 하루하루의 경로와 머문 장소
+const atlas = trips.map((t) => ({
+  slug: t.slug,
+  color: t.days[0].accent,
+  bbox: t.bbox,
+  lines: t.days.map((d) => d.route),
+  stops: t.days.flatMap((d) => d.stops.map((s) => ({ name: s.name, coords: s.coords }))),
+}));
+---
+<Base
+  title={`${site.title} — ${site.titleKo}`}
+  description={site.description}
+  image={trips[0].cover.src}
+>
+  <script slot="head-start" is:inline>
+    // Register before external assets load; enter only the travel card being read.
+    (() => {
+      const mobile = matchMedia('(max-width: 860px)');
+      const positions = new Map();
+      let entering = false;
+      let touchY = null;
+      let gestureAt = 0;
+      let lastY = scrollY;
+      let frame = 0;
+      const gates = () => document.querySelectorAll('[data-auto-entry]');
+      const snapshot = () => {
+        positions.clear();
+        gates().forEach(gate => positions.set(gate, gate.getBoundingClientRect().top));
+        lastY = scrollY;
+      };
+      const check = (fromGesture = false) => {
+        const line = innerHeight * .55;
+        const down = scrollY > lastY;
+        let destination;
+        for (const gate of gates()) {
+          const top = gate.getBoundingClientRect().top;
+          const previous = positions.get(gate) ?? top;
+          positions.set(gate, top);
+          const card = gate.closest('.entry');
+          if (!card || card.classList.contains('is-hidden') || !gate.getClientRects().length) continue;
+          const rect = card.getBoundingClientRect();
+          const crossed = previous > line && top <= line && down;
+          const inCard = fromGesture && top <= line && rect.top < line && rect.bottom > 80;
+          if (!destination && (crossed || inCard)) destination = card.querySelector('.open-link')?.getAttribute('href');
+        }
+        lastY = scrollY;
+        if (!mobile.matches || entering || !destination || !gestureAt || performance.now() - gestureAt > 1800 || localStorage.getItem('journey-auto') === 'off') return;
+        entering = true;
+        sessionStorage.setItem('journey-auto-entry', destination);
+        location.assign(destination);
+      };
+      const gesture = () => {
+        gestureAt = performance.now();
+        requestAnimationFrame(() => check(true));
+      };
+      addEventListener('touchstart', e => {
+        snapshot();
+        touchY = e.touches.length === 1 ? e.touches[0].clientY : null;
+      }, { passive: true });
+      addEventListener('touchmove', e => {
+        if (touchY !== null && e.touches.length === 1 && touchY - e.touches[0].clientY >= 8) gesture();
+      }, { passive: true });
+      addEventListener('touchend', () => { touchY = null; }, { passive: true });
+      addEventListener('touchcancel', () => { touchY = null; }, { passive: true });
+      addEventListener('wheel', e => { if (e.deltaY > 0) { snapshot(); gesture(); } }, { passive: true });
+      addEventListener('keydown', e => {
+        if (e.target instanceof Element && e.target.closest('input, textarea, select, button, [contenteditable]')) return;
+        if (['ArrowDown', 'PageDown', ' '].includes(e.key)) { snapshot(); gesture(); }
+      });
+      addEventListener('scroll', () => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => { frame = 0; check(); });
+      }, { passive: true });
+      addEventListener('pageshow', () => { entering = false; gestureAt = 0; touchY = null; snapshot(); });
+      addEventListener('DOMContentLoaded', snapshot);
+    })();
+  </script>
+  <header class="mast">
+    <div class="bar bar-top" aria-hidden="true"></div>
+    <div class="bar bar-bottom" aria-hidden="true"></div>
+    <div class="meta-row meta-top">
+      <span class="eyebrow">{site.eyebrow}</span>
+      <span class="eyebrow">{years[years.length - 1]}–{years[0]}</span>
+    </div>
+    <div class="mast-title">
+      <h1 class="split-title" aria-label={site.title}>
+        <span class="word w1" aria-hidden="true">{split(site.word1).map((l) => <span style={`--i:${l.i}`}>{l.ch}</span>)}</span>
+        <span class="word w2" aria-hidden="true">{split(site.word2, site.word1.length).map((l) => <span style={`--i:${l.i}`}>{l.ch}</span>)}</span>
+      </h1>
+      <p class="ko">{site.titleKo}</p>
+    </div>
+    <div class="meta-row meta-bottom">
+      <ul class="summary">
+        <li><b>{trips.length}</b> journeys</li>
+        <li><b>{totalDays}</b> days</li>
+        <li><b>{totalPlaces}</b> places</li>
+        <li><b>~{totalKm.toLocaleString('en-US')}</b> km</li>
+        <li><b>{totalPhotos}</b> photographs</li>
+      </ul>
+      <a class="eyebrow scroll-cue" href="#journeys">Scroll <span aria-hidden="true">↓</span></a>
+    </div>
+  </header>
+
+  <section id="journeys" class="journeys-wrap">
+    <div class="jmap-stage">
+      <div id="jmap" class="jmap" data-atlas={JSON.stringify(atlas)} data-label={site.atlasLabel}></div>
+      <div class="jmap-vignette" aria-hidden="true"></div>
+      <p class="jmap-label" aria-live="polite"><span class="eyebrow" data-jl="kicker">The Atlas</span><span data-jl="name">{site.atlasLabel}</span></p>
+    </div>
+
+    <div class="jlist">
+      <div class="jstep jintro" data-atlas-target="all">
+        <p class="eyebrow">The Journeys</p>
+        <h2>{site.introTitle}<br /><em>{site.introEmphasis}</em></h2>
+        <p>{site.intro}</p>
+        <button type="button" class="auto-journey-toggle" aria-pressed="true">스크롤로 여행기 이어보기 · 켜짐</button>
+        <div class="filters" role="group" aria-label="연도">
+          <button type="button" class="is-on" data-year="all">All</button>
+          {[...years].reverse().map((y) => <button type="button" data-year={y}>{y}</button>)}
+        </div>
+      </div>
+
+      {oldestFirst.map((t, i) => (
+        <article id={`journey-${t.slug}`} class="jstep entry" style={`--accent:${t.days[0].accent}`} data-year={t.start.slice(0, 4)} data-atlas-target={t.slug}>
+          <a class="cover" href={`/trips/${t.slug}/`} aria-label={`${t.titleKo} 여행기 보기`} data-vt-cover={t.slug}>
+            <img class="cover-img" src={t.cover.md} alt="" loading={i < 2 ? 'eager' : 'lazy'} />
+          </a>
+          <div class="entry-meta">
+            <p class="entry-no">{String(i + 1).padStart(2, '0')}</p>
+            <p class="eyebrow">{t.region} · {fmt(t.start)} — {fmt(t.end).slice(5)}</p>
+            <h2 class="entry-title"><a href={`/trips/${t.slug}/`}>{t.title}</a></h2>
+            <p class="entry-kicker">{t.kicker}</p>
+            <p class="entry-ko">{t.titleKo}</p>
+            <ul class="entry-stats">
+              <li><span class="n">{t.stats.days}</span><span class="u">days</span></li>
+              <li><span class="n">~{t.stats.km}</span><span class="u">km</span></li>
+              <li><span class="n">{t.stats.places}</span><span class="u">places</span></li>
+              <li><span class="n">{t.stats.photos}</span><span class="u">photos</span></li>
+            </ul>
+            <a class="open-link" href={`/trips/${t.slug}/`}>사진 {t.stats.photos}장과 여행기 보기 <span>↗</span></a>
+            <p class="scroll-entry-trigger" data-auto-entry><span aria-hidden="true">↓</span> 아래로 스크롤하면 여행기가 이어집니다</p>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span class="eyebrow">{site.title}</span>
+    <span class="eyebrow">Map © OpenFreeMap · OpenStreetMap contributors</span>
+  </footer>
+</Base>
+
+<script>
+  import maplibregl from '../scripts/maplibre';
+  import type { GeoJSONSource } from 'maplibre-gl';
+  import { scrollJourney, autoJourneyEnabled } from '../scripts/scroll-journey';
+
+  const toggle = document.querySelector<HTMLButtonElement>('.auto-journey-toggle')!;
+  const syncAuto = () => {
+    const on = autoJourneyEnabled();
+    toggle.setAttribute('aria-pressed', String(on));
+    toggle.textContent = `스크롤로 여행기 이어보기 · ${on ? '켜짐' : '꺼짐'}`;
+    document.body.classList.toggle('auto-journey-off', !on);
+  };
+  toggle.addEventListener('click', () => { localStorage.setItem('journey-auto', autoJourneyEnabled() ? 'off' : 'on'); syncAuto(); });
+  syncAuto();
+  document.querySelectorAll<HTMLElement>('[data-auto-entry]').forEach((gate) => {
+    const link = gate.parentElement!.querySelector<HTMLAnchorElement>('.open-link')!;
+    scrollJourney(gate, link, () => !matchMedia('(max-width: 860px)').matches && autoJourneyEnabled());
+  });
+
+  type LngLat = [number, number];
+  type Atlas = { slug: string; color: string; bbox: [LngLat, LngLat]; lines: LngLat[][]; stops: { name: string; coords: LngLat }[] };
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const el = document.getElementById('jmap')!;
+  const atlas: Atlas[] = JSON.parse(el.dataset.atlas!);
+  const bySlug = new Map(atlas.map((a) => [a.slug, a]));
+  const allCorners = atlas.flatMap(a => a.bbox);
+  const OVERVIEW: [LngLat, LngLat] = [[Math.min(...allCorners.map(p => p[0])) - .1, Math.min(...allCorners.map(p => p[1])) - .1], [Math.max(...allCorners.map(p => p[0])) + .1, Math.max(...allCorners.map(p => p[1])) + .1]];
+  const EMPTY = { type: 'FeatureCollection' as const, features: [] };
+
+  const map = new maplibregl.Map({
+    container: el,
+    style: 'https://tiles.openfreemap.org/styles/dark',
+    bounds: OVERVIEW,
+    fitBoundsOptions: { padding: 40 },
+    interactive: false,
+    attributionControl: false,
+    maxPitch: 70,
+  });
+
+  let ready = false;
+  let pending: (() => void) | null = null;
+  map.on('load', () => {
+    map.addSource('dem', {
+      type: 'raster-dem',
+      tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+      encoding: 'terrarium',
+      tileSize: 256,
+      maxzoom: 12,
+    });
+    const firstSymbol = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
+    map.addLayer(
+      { id: 'hillshade', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.5, 'hillshade-shadow-color': '#000', 'hillshade-highlight-color': '#5a5550' } },
+      firstSymbol,
+    );
+    map.addSource('trips', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: atlas.flatMap((a) =>
+          a.lines.map((l) => ({ type: 'Feature' as const, properties: { slug: a.slug, color: a.color }, geometry: { type: 'LineString' as const, coordinates: l } })),
+        ),
+      },
+    });
+    map.addSource('active', { type: 'geojson', data: EMPTY, lineMetrics: true });
+    map.addLayer({ id: 'all-glow', type: 'line', source: 'trips', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 8, 'line-opacity': 0.2, 'line-blur': 6 } });
+    map.addLayer({ id: 'all', type: 'line', source: 'trips', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-opacity': 0.9 } });
+    map.addLayer({ id: 'active-glow', type: 'line', source: 'active', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 12, 'line-blur': 10, 'line-opacity': 0.35 } });
+    map.addLayer({ id: 'active', type: 'line', source: 'active', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 3.5 } });
+    ready = true;
+    pending?.();
+    pending = null;
+  });
+  const whenReady = (fn: () => void) => (ready ? fn() : (pending = fn));
+
+  // 여행마다 머문 장소 이름 (같은 곳은 하나만)
+  const markers = new Map<string, HTMLElement[]>();
+  for (const a of atlas) {
+    const seen = new Set<string>();
+    const list: HTMLElement[] = [];
+    for (const s of a.stops) {
+      const key = s.coords.map((v) => v.toFixed(2)).join(',');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const m = document.createElement('div');
+      m.className = 'mk';
+      m.style.setProperty('--c', a.color);
+      m.innerHTML = '<span class="mk-dot"></span><span class="mk-label"></span>';
+      m.querySelector('.mk-label')!.textContent = s.name;
+      new maplibregl.Marker({ element: m, anchor: 'left', offset: [-5, 0] }).setLngLat(s.coords).addTo(map);
+      list.push(m);
+    }
+    markers.set(a.slug, list);
+  }
+
+  let raf = 0;
+  function drawActive(a: Atlas | null) {
+    cancelAnimationFrame(raf);
+    const src = map.getSource('active') as GeoJSONSource;
+    if (!a) return src.setData(EMPTY);
+    src.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: a.lines } }] });
+    const t0 = performance.now();
+    const dur = reduced ? 1 : 2400;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const e = Math.max(1e-4, 1 - (1 - p) ** 3);
+      const grad = ['step', ['line-progress'], a.color, e, 'rgba(0,0,0,0)'];
+      map.setPaintProperty('active', 'line-gradient', grad);
+      map.setPaintProperty('active-glow', 'line-gradient', grad);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  const label = { kicker: document.querySelector('[data-jl="kicker"]')!, name: document.querySelector('[data-jl="name"]')! };
+  let current = '';
+  function show(slug: string) {
+    if (slug === current) return;
+    current = slug;
+    whenReady(() => {
+      const a = slug === 'all' ? null : bySlug.get(slug)!;
+      for (const [s, list] of markers) list.forEach((m) => m.classList.toggle('is-today', s === slug));
+      map.setPaintProperty('all', 'line-opacity', a ? ['case', ['==', ['get', 'slug'], a.slug], 0, 0.18] : 0.9);
+      map.setPaintProperty('all-glow', 'line-opacity', a ? 0 : 0.2);
+      drawActive(a);
+      const { width: w } = el.getBoundingClientRect();
+      if (a) {
+        const mobile = matchMedia('(max-width: 860px)').matches;
+        map.setTerrain(mobile ? null : { source: 'dem', exaggeration: 1.3 });
+        map.fitBounds(a.bbox, { padding: mobile ? 36 : { top: 80, bottom: 80, left: w * 0.12, right: w * 0.22 }, maxZoom: mobile ? 9.5 : 10.5, pitch: mobile ? 0 : 50, bearing: mobile ? 0 : -12, duration: reduced ? 0 : 1800, essential: true });
+      } else {
+        map.setTerrain(null);
+        map.fitBounds(OVERVIEW, { padding: 40, pitch: 0, bearing: 0, duration: reduced ? 0 : 2200, essential: true });
+      }
+      const entry = document.querySelector<HTMLElement>(`[data-atlas-target="${slug}"]`);
+      label.kicker.textContent = a ? entry!.querySelector('.eyebrow')!.textContent! : 'The Atlas';
+      label.name.textContent = a ? entry!.querySelector('.entry-title')!.textContent! : `${el.dataset.label} · ${atlas.length}번의 여행`;
+      document.documentElement.style.setProperty('--accent', a ? a.color : '#e0525a');
+    });
+  }
+
+  // 화면 가운데를 지나는 여행이 지도를 움직인다
+  const driver = new IntersectionObserver(
+    (es) => {
+      for (const e of es) {
+        if (!e.isIntersecting) continue;
+        document.querySelectorAll('.jstep.is-active').forEach((x) => x.classList.remove('is-active'));
+        e.target.classList.add('is-active');
+        show((e.target as HTMLElement).dataset.atlasTarget!);
+      }
+    },
+    { rootMargin: '-49% 0px -50% 0px' },
+  );
+  document.querySelectorAll('[data-atlas-target]').forEach((s) => driver.observe(s));
+
+  // 연도 필터
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('button[data-year]')];
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => {
+      buttons.forEach((x) => x.classList.toggle('is-on', x === b));
+      document.querySelectorAll<HTMLElement>('.entry').forEach((e) => {
+        e.classList.toggle('is-hidden', !(b.dataset.year === 'all' || e.dataset.year === b.dataset.year));
+      });
+    }),
+  );
+</script>

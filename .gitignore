@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+.netlify/
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+imports/
+public/photos/
+public/vendor/

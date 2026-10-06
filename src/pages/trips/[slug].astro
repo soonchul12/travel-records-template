@@ -1,0 +1,225 @@
+---
+import Base from '../../layouts/Base.astro';
+import trips from '../../data/trips.json';
+import site from '../../data/site.json';
+
+export function getStaticPaths() {
+  return trips.map((trip, i) => ({
+    params: { slug: trip.slug },
+    props: { trip, older: trips[i + 1], newer: trips[i - 1] },
+  }));
+}
+
+const { trip, older, newer } = Astro.props;
+const fmt = (d: string) => d.replaceAll('-', '.');
+const pad = (n: number) => String(n).padStart(2, '0');
+const letters = [...trip.title.toUpperCase()];
+let li = 0;
+const words = trip.title.toUpperCase().split(' ').map((w) => [...w].map((ch) => ({ ch, i: li++ })));
+const coordLabel = `${trip.center[0].toFixed(4)}° N · ${trip.center[1].toFixed(4)}° E`;
+const CARD_THUMBS = 6;
+
+const mapData = {
+  bbox: trip.bbox,
+  days: trip.days.map((d) => ({
+    day: d.day,
+    accent: d.accent,
+    route: d.route,
+    stops: d.stops.map((s) => ({
+      id: s.id,
+      name: s.name,
+      kind: s.kind,
+      coords: s.coords,
+      hour: s.hour,
+      time: s.time,
+      camera: s.camera,
+      photos: s.photos.map((p) => ({ id: p.id, coords: p.coords, md: p.md })),
+    })),
+  })),
+};
+---
+<Base
+  title={`${trip.title.toUpperCase()} — ${trip.titleKo}`}
+  description={`${trip.intro} (${fmt(trip.start)} – ${fmt(trip.end)})`}
+  image={trip.cover.src}
+  expect="#trip-hero"
+>
+  <header class="hero">
+    <div class="hero-media" id="trip-hero" data-vt-hero>
+      <img class="hero-img" src={trip.cover.src} alt="" width={trip.cover.w} height={trip.cover.h} />
+    </div>
+    <div class="bar bar-top" aria-hidden="true"></div>
+    <div class="bar bar-bottom" aria-hidden="true"></div>
+    <div class="meta-row meta-top">
+      <span class="eyebrow">{site.eyebrow}</span>
+      <span class="eyebrow">{coordLabel}</span>
+    </div>
+    <div class="hero-title">
+      <p class="kicker">{trip.kicker}</p>
+      <h1 class="split-title" style={`--len:${letters.length}`} aria-label={trip.title}>
+        {words.map((w, wi) => (
+          <>
+            {wi > 0 && ' '}
+            <span class="word" aria-hidden="true">{w.map((l) => <span style={`--i:${l.i}`}>{l.ch}</span>)}</span>
+          </>
+        ))}
+      </h1>
+      <p class="ko">{trip.titleKo}</p>
+    </div>
+    <div class="meta-row meta-bottom">
+      <span class="eyebrow">{fmt(trip.start)} — {fmt(trip.end)}</span>
+      <a class="eyebrow scroll-cue" href="#stats">Scroll <span aria-hidden="true">↓</span></a>
+    </div>
+  </header>
+
+  <a class="back" href={`/#journey-${trip.slug}`}>← 여행 목록</a>
+
+  <section id="stats" class="stats">
+    <p class="eyebrow reveal">The Trip in Numbers · {trip.region}</p>
+    <p class="intro reveal">{trip.intro}</p>
+    <ul>
+      <li class="reveal" style="transition-delay:0s"><span class="num"><span data-count={trip.stats.days}>{trip.stats.days}</span></span><span class="unit">days</span><span class="label">여행한 날</span></li>
+      <li class="reveal" style="transition-delay:.12s"><span class="num">~<span data-count={trip.stats.km}>{trip.stats.km}</span></span><span class="unit">km</span><span class="label">사진으로 이은 거리</span></li>
+      <li class="reveal" style="transition-delay:.24s"><span class="num"><span data-count={trip.stats.places}>{trip.stats.places}</span></span><span class="unit">places</span><span class="label">머문 장소</span></li>
+      <li class="reveal" style="transition-delay:.36s"><span class="num"><span data-count={trip.stats.photos}>{trip.stats.photos}</span></span><span class="unit">photos</span><span class="label">남은 사진</span></li>
+    </ul>
+  </section>
+
+  <nav class="rail" aria-label="날짜별 이동">
+    <ol>
+      {trip.days.map((d) => (
+        <li><a href={`#day-${d.day}`} data-rail-day={d.day} style={`--c:${d.accent}`}><span class="tick"></span><span class="txt"><b>D{pad(d.day)}</b> {fmt(d.date).slice(5)}</span></a></li>
+      ))}
+    </ol>
+  </nav>
+  <div class="progress" aria-hidden="true"><span></span></div>
+
+  <div id="map-stage">
+    <div id="map" aria-hidden="true"></div>
+    <div class="map-tint" aria-hidden="true"></div>
+    <div class="map-vignette" aria-hidden="true"></div>
+    <div class="route-panel">
+      <span class="eyebrow" data-route="day">오늘의 이동</span>
+      <p><span data-route="from"></span><span class="route-arrow" aria-hidden="true">→</span><span data-route="to"></span></p>
+      <span class="route-detail" data-route="detail"></span>
+      <div class="route-views"><button type="button" data-map-view="route" aria-pressed="true">이동 경로 전체</button><button type="button" data-map-view="place" aria-pressed="false">현재 위치 확대 +</button></div>
+    </div>
+    <div class="hud" aria-live="polite">
+      <span class="hud-phase" data-hud="phase"></span>
+      <span class="hud-place" data-hud="place"></span>
+      <span data-hud="coords"></span>
+    </div>
+  </div>
+
+  <div class="controls">
+      <button type="button" data-action="play" aria-pressed="false" title="천천히 저절로 스크롤 (P)">▶ 자동 감상</button>
+      <button type="button" data-action="explore" aria-pressed="false" title="지도를 직접 끌어서 둘러보기">지도 둘러보기</button>
+      <button type="button" data-action="share" title="이 여행기 공유하기">공유 ↗</button>
+      <button type="button" class="kbd-hint" data-action="next" title="다음 장소 (→)">Next <kbd>→</kbd></button>
+    </div>
+
+  <main id="story">
+    {trip.days.map((d) => (
+      <section class="chapter" id={`day-${d.day}`} data-day={d.day} style={`--accent:${d.accent}`}>
+        <header class="title-card" data-map-target="day" data-day={d.day}>
+          <div class="title-media">
+            <img class="photo title-img" src={d.cover.src} alt="" loading="lazy" decoding="async" />
+          </div>
+          <div class="title-inner reveal">
+            <p class="eyebrow">Day {pad(d.day)} · {fmt(d.date).slice(5)} {d.weekday}</p>
+            <h2><span class="big-num" aria-hidden="true">{pad(d.day)}</span><span class="title-ko">{d.titleKo}</span></h2>
+            <p class="title-en">{d.titleEn}</p>
+            <p class="lede">{d.lede}</p>
+          </div>
+        </header>
+
+        <div class="steps">
+          <div class="step overview reveal" data-map-target="day" data-day={d.day}>
+            <div class="route-caption">
+              <p class="eyebrow">The Route · {fmt(d.date).slice(5)}</p>
+              <p class="route-stats"><span>~{d.km}<small>km</small></span><span>{d.stops.length}<small>{d.stops.length > 1 ? 'stops' : 'stop'}</small></span><span>{d.photoCount}<small>photos</small></span></p>
+              <ol class="route-list">
+                {d.stops.map((s, i) => <li style={`--i:${i}`}>{s.name}</li>)}
+              </ol>
+            </div>
+          </div>
+
+          {d.stops.map((s, i) => (
+            <article class="step" data-map-target="stop" data-stop-id={s.id} data-day={d.day}>
+              <div class="card">
+                <div class="card-head">
+                  <span class="eyebrow">{pad(i + 1)} / {pad(d.stops.length)} · {s.kindEn} · {s.time}</span>
+                </div>
+                <h3>{s.name}</h3>
+                <p class="name-en">{s.en}</p>
+                <p class="note">{s.note}</p>
+                <div class="thumbs pswp-gallery">
+                  {s.photos.map((p, k) => (
+                    <a
+                      class="thumb pswp-item"
+                      href={p.src}
+                      data-pswp-width={p.w}
+                      data-pswp-height={p.h}
+                      data-caption={`${s.name} · ${p.time}`}
+                      data-photo={p.id}
+                      data-stop={s.id}
+                      style={`--i:${k}${k >= CARD_THUMBS ? ';display:none' : ''}`}
+                    >
+                      <img src={p.md} width={p.w} height={p.h} alt={`${s.name} ${p.time}`} loading="lazy" decoding="async" />
+                      <span class="t">{p.time}</span>
+                      {k === CARD_THUMBS - 1 && s.photos.length > CARD_THUMBS && <span class="more">+{s.photos.length - CARD_THUMBS}</span>}
+                    </a>
+                  ))}
+                </div>
+                {s.photos.length > CARD_THUMBS && <button type="button" class="photos-toggle" aria-expanded="false">사진 {s.photos.length}장 모두 펼쳐보기 +</button>}
+                <div class="card-foot">
+                  <span class="eyebrow">{s.photos.length} photos</span>
+                  <span class="eyebrow">{s.coords[1].toFixed(3)}° N · {s.coords[0].toFixed(3)}° E</span>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <section class="journal" data-map-target="journal" data-day={d.day} aria-label={`Day ${d.day} 일기`}>
+          <div class="journal-text reveal">
+            <p class="journal-date"><span>{fmt(d.date).slice(5)}</span><span>{d.weekday}</span></p>
+            <div class="memo">
+              <p>Day {d.day} 메모</p>
+              <p>이동 ~{d.km}km</p>
+              <p>사진 {d.photoCount}장</p>
+            </div>
+            <div class="prose">
+              {d.journal.map((para) => <p>{para}</p>)}
+            </div>
+          </div>
+          <div class="mosaic pswp-gallery reveal">
+            {d.mosaic.map((p, k) => (
+              <a class={`photo pswp-item tile t${k % 5}`} href={p.src} data-pswp-width={p.w} data-pswp-height={p.h} data-caption={`${fmt(d.date).slice(5)} · ${p.time}`} style={`--i:${k}`}>
+                <img src={p.md} alt="" loading="lazy" decoding="async" />
+              </a>
+            ))}
+          </div>
+        </section>
+      </section>
+    ))}
+  </main>
+
+  <footer class="outro">
+    <p class="eyebrow">End of the journal</p>
+    <h2>{trip.title}</h2>
+    {newer && <div class="continue-journey"><p class="eyebrow">Next journey · {fmt(newer.start).slice(0, 7)}</p><a class="continue-link" href={`/trips/${newer.slug}/`}>{newer.titleKo} <span>→</span></a><p class="scroll-entry-trigger" data-auto-next><span aria-hidden="true">↓</span> 계속 스크롤하면 다음 여행으로 이어집니다</p></div>}
+    <div class="outro-links">
+      {newer && <a href={`/trips/${newer.slug}/`}>← {newer.title}<small>{fmt(newer.start).slice(0, 7)}</small></a>}
+      <a href="/" class="home-link">ALL JOURNEYS</a>
+      {older && <a href={`/trips/${older.slug}/`}>{older.title} →<small>{fmt(older.start).slice(0, 7)}</small></a>}
+    </div>
+    <p class="eyebrow">Map © OpenFreeMap · OpenStreetMap contributors · Terrain: Mapzen / AWS Terrain Tiles</p>
+  </footer>
+
+  <script type="application/json" id="trip-data" set:html={JSON.stringify(mapData)} />
+</Base>
+
+<script>
+  import '../../scripts/trip';
+</script>
